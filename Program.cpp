@@ -22,9 +22,13 @@ Program::Program()
 	values->GuiSettings = new GuiSettings();
 	values->GlobalLight = new LightBuffer();
 
+
+
 	values->MainCamera = new FirstPerson(100);
 	values->MainCamera->SetPosition(110, 65, -55);
 	values->MainCamera->SetRotationDegree(27, 2);
+
+
 
 	values->JsonRoot = new Json::Value();
 	Json::ReadData(L"LevelEditor.json", values->JsonRoot);
@@ -59,8 +63,8 @@ void Program::Update()
 {
 	values->MainCamera->Update();
 
-	
-	
+
+
 	for (Execute* exe : executes)
 		exe->Update();
 }
@@ -79,7 +83,7 @@ void Program::Render()
 
 	values->ViewProjection->SetView(view);
 	values->ViewProjection->SetProjection(projection);
-	values->ViewProjection->SetVSBuffer(0);
+	values->ViewProjection->SetDSBuffer(0);
 
 	values->GlobalLight->SetPSBuffer(0);
 

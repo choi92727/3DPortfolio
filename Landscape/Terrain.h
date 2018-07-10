@@ -2,6 +2,9 @@
 
 namespace Landscape
 {
+
+
+
 	class Terrain
 	{
 	public:
@@ -50,5 +53,7 @@ namespace Landscape
 		ID3D11SamplerState* detailSampler;
 		GridBuffer* gridBuffer;
 
+
+		ID3D11RasterizerState* rasterizer[2];
 	};
 }

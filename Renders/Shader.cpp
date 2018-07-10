@@ -5,6 +5,8 @@ void Shader::Render()
 {
 	D3D::GetDC()->IASetInputLayout(inputLayout);
 	D3D::GetDC()->VSSetShader(vertexShader, NULL, 0);
+	D3D::GetDC()->HSSetShader(hullShader, NULL, 0);
+	D3D::GetDC()->DSSetShader(domainShader, NULL, 0);
 	D3D::GetDC()->PSSetShader(pixelShader, NULL, 0);
 }
 
@@ -12,6 +14,8 @@ Shader::Shader(wstring shaderFile)
 	: shaderFile(shaderFile)
 {
 	CreateVertexShader();
+	CreateDomainShader();
+	CreateHullShader();
 	CreatePixelShader();
 	CreateInputLayout();
 }
@@ -23,6 +27,12 @@ Shader::~Shader()
 	SAFE_RELEASE(inputLayout);
 	SAFE_RELEASE(vertexBlob);
 	SAFE_RELEASE(vertexShader);
+
+	SAFE_RELEASE(hullBlob);
+	SAFE_RELEASE(hullShader);
+
+	SAFE_RELEASE(domainBlob);
+	SAFE_RELEASE(domainShader);
 
 	SAFE_RELEASE(pixelBlob);
 	SAFE_RELEASE(pixelShader);
@@ -45,6 +55,48 @@ void Shader::CreateVertexShader()
 		, vertexBlob->GetBufferSize()
 		, NULL
 		, &vertexShader
+	);
+	assert(SUCCEEDED(hr));
+}
+
+void Shader::CreateHullShader()
+{
+	ID3D10Blob* error;
+	HRESULT hr = D3DX11CompileFromFile
+	(
+		shaderFile.c_str(), NULL, NULL, "HS", "hs_5_0"
+		, D3D10_SHADER_ENABLE_STRICTNESS, 0, NULL
+		, &hullBlob, &error, NULL
+	);
+	CheckShaderError(hr, error);
+
+	hr = D3D::GetDevice()->CreateHullShader
+	(
+		hullBlob->GetBufferPointer()
+		, hullBlob->GetBufferSize()
+		, NULL
+		, &hullShader
+	);
+	assert(SUCCEEDED(hr));
+}
+
+void Shader::CreateDomainShader()
+{
+	ID3D10Blob* error;
+	HRESULT hr = D3DX11CompileFromFile
+	(
+		shaderFile.c_str(), NULL, NULL, "DS", "ds_5_0"
+		, D3D10_SHADER_ENABLE_STRICTNESS, 0, NULL
+		, &domainBlob, &error, NULL
+	);
+	CheckShaderError(hr, error);
+
+	hr = D3D::GetDevice()->CreateDomainShader
+	(
+		domainBlob->GetBufferPointer()
+		, domainBlob->GetBufferSize()
+		, NULL
+		, &domainShader
 	);
 	assert(SUCCEEDED(hr));
 }
@@ -166,3 +218,4 @@ void Shader::CreateInputLayout()
 	);
 	assert(SUCCEEDED(hr));
 }
+
