@@ -1,0 +1,11 @@
+{
+   "Global Light" : {
+      "Overcast" : 1.0
+   },
+   "Window" : {
+      "Environment Window" : false,
+      "Global Light Window" : true,
+      "Landscape Window" : false,
+      "System Info Window" : true
+   }
+}
