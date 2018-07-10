@@ -1,7 +1,7 @@
 #pragma once
 
 
-#define multipleValue 2.f
+#define multipleValue 10.f
 namespace Landscape
 {
 
@@ -24,7 +24,7 @@ namespace Landscape
 	class QuadTree
 	{
 	private:
-		const float UnitNode_Radius = 4.f;
+		const float UnitNode_Radius = 16.f;
 
 	public:
 		QuadTree(class Data* data, ExecuteValues *  values);

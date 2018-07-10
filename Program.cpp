@@ -84,6 +84,7 @@ void Program::Render()
 	values->ViewProjection->SetView(view);
 	values->ViewProjection->SetProjection(projection);
 	values->ViewProjection->SetDSBuffer(0);
+	values->ViewProjection->SetHSBuffer(0);
 
 	values->GlobalLight->SetPSBuffer(0);
 

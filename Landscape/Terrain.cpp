@@ -17,7 +17,7 @@ Landscape::Terrain::Terrain(ExecuteValues *  values)
 	worldBuffer = new WorldBuffer();
 
 	gridBuffer = new GridBuffer();
-
+	tessAmountBuffer = new TessAmountBuffer();
 
 
 	data = new Data(Contents + L"Landscape/HeightMap256.png");
@@ -51,6 +51,7 @@ Landscape::Terrain::Terrain(ExecuteValues *  values)
 Landscape::Terrain::~Terrain()
 {
 	SAFE_DELETE(gridBuffer);
+	SAFE_DELETE(tessAmountBuffer);
 
 	SAFE_DELETE(data);
 	SAFE_DELETE(fog);
@@ -76,7 +77,9 @@ void Landscape::Terrain::Update()
 void Landscape::Terrain::Render()
 {
 	worldBuffer->SetDSBuffer(1);
+	worldBuffer->SetHSBuffer(1);
 	gridBuffer->SetPSBuffer(3);
+	tessAmountBuffer->SetHSBuffer(10);
 
 	material->SetBuffer();
 
@@ -95,6 +98,16 @@ void Landscape::Terrain::PostRender()
 {
 	fog->PostRender();
 	quadTree->PostRender();
+	ImGui::Begin("quadTree");
+	{
+		if (ImGui::TreeNode("Tess Amount"))
+		{
+			ImGui::InputFloat("Max TessAmount", &(tessAmountBuffer->Data.maxTess));
+			ImGui::InputFloat("Distance", &(tessAmountBuffer->Data.distance));
+			ImGui::TreePop();
+		}
+	}
+	ImGui::End();
 
 
 
