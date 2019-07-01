@@ -2,6 +2,25 @@
 
 namespace Landscape
 {
+	class TessAmountBuffer : public ShaderBuffer
+	{
+	public:
+		TessAmountBuffer()
+			: ShaderBuffer(&Data, sizeof(Data))
+		{
+			Data.maxTess = 5.f;
+			Data.distance = 2500.f;
+		}
+
+		struct Struct
+		{
+			float maxTess;
+			float distance;
+			float Padding[2];
+		} Data;
+	};
+
+
 	class Terrain
 	{
 	public:
@@ -45,10 +64,13 @@ namespace Landscape
 
 		Material* material;
 		WorldBuffer* worldBuffer;
+		TessAmountBuffer* tessAmountBuffer;
 
 		ID3D11SamplerState* diffuseSampler;
 		ID3D11SamplerState* detailSampler;
 		GridBuffer* gridBuffer;
 
+
+		ID3D11RasterizerState* rasterizer[2];
 	};
 }

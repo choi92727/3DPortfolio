@@ -10,20 +10,32 @@ public:
 
 	void Render();
 
+
+
+
 private:
 	void CreateVertexShader();
+	void CreateHullShader();
+	void CreateDomainShader();
 	void CreatePixelShader();
 	void CheckShaderError(HRESULT hr, ID3DBlob* error);
 	void CreateInputLayout();
 
+
 private:
 	wstring shaderFile;
 	ID3D11VertexShader* vertexShader;
+	ID3D11HullShader* hullShader;
+	ID3D11DomainShader* domainShader;
 	ID3D11PixelShader* pixelShader;
+
 
 	ID3D11InputLayout* inputLayout;
 
 	ID3DBlob* vertexBlob;
+	ID3DBlob* domainBlob;
+	ID3DBlob* hullBlob;
+
 	ID3DBlob* pixelBlob;
 
 	ID3D11ShaderReflection* reflection;

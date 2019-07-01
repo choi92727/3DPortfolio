@@ -5,9 +5,10 @@
 #include "Frustum.h"
 
 
-Landscape::QuadTree::QuadTree(Data * data)
+Landscape::QuadTree::QuadTree(Data * data, ExecuteValues *  values)
 	: drawCount(0)
 	, data(data)
+	, values(values)
 {
 
 	D3DXVECTOR3 LT;
@@ -16,7 +17,7 @@ Landscape::QuadTree::QuadTree(Data * data)
 
 	parentNode = new Node();
 	CreateNode(parentNode, LT, RB);
-
+	tessBuffer = new TerrainTessBuffer();
 	int a = 10;
 }
 
@@ -37,7 +38,7 @@ void Landscape::QuadTree::Calculate(D3DXVECTOR3 * LT, D3DXVECTOR3 * RB)
 		if (minZ > vertex.position.z) minZ = vertex.position.z;
 		if (maxZ < vertex.position.z) maxZ = vertex.position.z;
 	}
-	
+
 	*LT = D3DXVECTOR3(minX, 0.0f, maxZ);
 	*RB = D3DXVECTOR3(maxX, 0.0f, minZ);
 
@@ -46,63 +47,62 @@ void Landscape::QuadTree::Calculate(D3DXVECTOR3 * LT, D3DXVECTOR3 * RB)
 void Landscape::QuadTree::CreateNode(Node * node, D3DXVECTOR3 LT, D3DXVECTOR3 RB)
 {
 	node->LT = LT;
-	node->RB = RB;	   
+	node->RB = RB;
 	node->isRender = false;
 	float radiusX = fabsf(LT.x - RB.x)*0.5f;
 	float radiusZ = fabsf(LT.z - RB.z)*0.5f;
 
 	float radius = max(radiusX, radiusZ);
 
-	
 
 
-	
+
+
 	if (radius <= UnitNode_Radius)// 단위 노드
 	{
-		
+
 		node->isRender = true;
 		vector<TerrainVertexType> vertices;
 		vector<UINT> indices;
 		UINT nodeWidth = fabsf(RB.x - LT.x);
 		UINT nodeHeight = fabsf(RB.z - LT.z);
 
-		UINT vertexCount = (nodeWidth)*(nodeHeight);
+		UINT vertexCount = (nodeWidth + 1)*(nodeHeight + 1);
 
 
 		vertices.assign(vertexCount, TerrainVertexType());
 
 		UINT index = 0;
-		for (UINT z =(UINT) RB.z; z < (UINT)LT.z; z++)
+		for (UINT z = (UINT)RB.z; z <= (UINT)LT.z; z++)
 		{
-			for (UINT x = (UINT)LT.x; x < (UINT)RB.x; x++)
+			for (UINT x = (UINT)LT.x; x <= (UINT)RB.x; x++)
 			{
-				TerrainVertexType vertex = data->GetVertices()[x+(z*(data->GetWidth()+1))];
-				vertices[index] = vertex;
-				if (index == vertexCount - 1)
-					vertex.position.y = 1000.0f;
+				TerrainVertexType vertex = data->GetVertices()[x + (z*(data->GetWidth() + 1))];
 
+				vertex.position.x *= multipleValue;
+				vertex.position.y *= multipleValue;
+				vertex.position.z *= multipleValue;
+				vertices[index] = vertex;
 				index++;
 			}
 		}
 
-		UINT indexCount = (nodeWidth-1)*(nodeHeight-1) * 6;
+		UINT indexCount = (nodeWidth)*(nodeHeight) * 4;
 		indices.assign(indexCount, UINT());
 		index = 0;
-		for (UINT z = 0; z < nodeWidth-1; z++)
+		for (UINT z = 0; z < nodeWidth; z++)
 		{
-			for (UINT x = 0; x < nodeHeight-1; x++)
+			for (UINT x = 0; x < nodeHeight; x++)
 			{
-				indices[index + 0] = (nodeWidth) * z + x;
-				indices[index + 1] = (nodeWidth) * (z + 1) + x;
-				indices[index + 2] = (nodeWidth) * z + x + 1;
-				indices[index + 3] = (nodeWidth) * z + x + 1;
-				indices[index + 4] = (nodeWidth) * (z + 1) + x;
-				indices[index + 5] = (nodeWidth) * (z + 1) + (x + 1);
+				indices[index + 0] = (nodeWidth + 1) * z + x;
+				indices[index + 1] = (nodeWidth + 1) * (z + 1) + x;
+				indices[index + 2] = (nodeWidth + 1) * z + x + 1;
+				indices[index + 3] = (nodeWidth + 1) * (z + 1) + (x + 1);
 
-				index += 6;
+				index += 4;
 			}
 		}
-		
+
 		//VertexBuffer
 		{
 			D3D11_BUFFER_DESC desc = { 0 };
@@ -137,6 +137,8 @@ void Landscape::QuadTree::CreateNode(Node * node, D3DXVECTOR3 LT, D3DXVECTOR3 RB
 		node->DrawCount = indices.size();
 		vertices.clear();
 		indices.clear();
+
+
 		return;
 	}
 
@@ -145,14 +147,14 @@ void Landscape::QuadTree::CreateNode(Node * node, D3DXVECTOR3 LT, D3DXVECTOR3 RB
 		node->VertexBuffer = NULL;
 		node->IndexBuffer = NULL;
 
-		float width =  (RB.x - LT.x) * .5f;
+		float width = (RB.x - LT.x) * .5f;
 		float height = (LT.z - RB.z) * .5f;
 
-		D3DXVECTOR3 centerTop	 =	 D3DXVECTOR3(LT.x+ width, 0, LT.z		  );
-		D3DXVECTOR3 centerRight  =	 D3DXVECTOR3(RB.x,	 	  0, RB.z + height);
-		D3DXVECTOR3 centerLeft	 =	 D3DXVECTOR3(LT.x,	 	  0, RB.z + height);
-		D3DXVECTOR3 center		 =	 D3DXVECTOR3(LT.x+ width, 0, RB.z + height);
-		D3DXVECTOR3 centerBottom =	 D3DXVECTOR3(LT.x+ width, 0, RB.z		  );
+		D3DXVECTOR3 centerTop = D3DXVECTOR3(LT.x + width, 0, LT.z);
+		D3DXVECTOR3 centerRight = D3DXVECTOR3(RB.x, 0, RB.z + height);
+		D3DXVECTOR3 centerLeft = D3DXVECTOR3(LT.x, 0, RB.z + height);
+		D3DXVECTOR3 center = D3DXVECTOR3(LT.x + width, 0, RB.z + height);
+		D3DXVECTOR3 centerBottom = D3DXVECTOR3(LT.x + width, 0, RB.z);
 
 		for (int i = 0; i < 4; i++)
 		{
@@ -193,7 +195,9 @@ void Landscape::QuadTree::CreateNode(Node * node, D3DXVECTOR3 LT, D3DXVECTOR3 RB
 
 
 
+
 			node->Childs[i] = new Node();
+
 			CreateNode(node->Childs[i], tempLT, tempRB);
 
 		}//for(i)
@@ -210,6 +214,7 @@ Landscape::QuadTree::~QuadTree()
 		DeleteNode(parentNode);
 		SAFE_DELETE(parentNode);
 	}
+	SAFE_DELETE(tessBuffer);
 }
 
 void Landscape::QuadTree::DeleteNode(Node * node)
@@ -220,10 +225,10 @@ void Landscape::QuadTree::DeleteNode(Node * node)
 			DeleteNode(node->Childs[i]);
 	}
 
-	if(node->VertexBuffer!= NULL)
-	SAFE_RELEASE(node->VertexBuffer);
+	if (node->VertexBuffer != NULL)
+		SAFE_RELEASE(node->VertexBuffer);
 	if (node->IndexBuffer != NULL)
-	SAFE_RELEASE(node->IndexBuffer);
+		SAFE_RELEASE(node->IndexBuffer);
 
 	for (int i = 0; i < 4; i++)
 		SAFE_DELETE(node->Childs[i]);
@@ -240,8 +245,10 @@ void Landscape::QuadTree::Render(Frustum* frustum)
 {
 	drawCount = 0;
 
-	if(parentNode != NULL)
-		RenderNode(parentNode , frustum);
+	if (parentNode != NULL)
+		RenderNode(parentNode, frustum);
+
+
 }
 
 void Landscape::QuadTree::PostRender()
@@ -258,19 +265,19 @@ void Landscape::QuadTree::PostRender()
 	ImGui::End();
 }
 
-void Landscape::QuadTree::RenderNode(Node * node , Frustum* frustum)
+void Landscape::QuadTree::RenderNode(Node * node, Frustum* frustum)
 {
 	//TODO: 보여질 영역 판단
 	bool result;
-	float xRadius, zRadius , xCenter, zCenter;
+	float xRadius, zRadius, xCenter, zCenter;
 
-	xRadius = fabsf(node->RB.x - node->LT.x)/2.f;
-	zRadius = fabsf(node->LT.z - node->RB.z)/2.f;
+	xRadius = fabsf(node->RB.x - node->LT.x) / 2.f;
+	zRadius = fabsf(node->LT.z - node->RB.z) / 2.f;
 	xCenter = xRadius + node->LT.x;
 	zCenter = zRadius + node->RB.z;
 
-	
-	result = frustum->CheckCube(xCenter,0.0f,zCenter,xRadius);
+
+	result = frustum->CheckCube(xCenter*multipleValue, 0.0f, zCenter*multipleValue, xRadius*multipleValue);
 	if (!result)
 	{
 		node->isRender = false;
@@ -286,26 +293,30 @@ void Landscape::QuadTree::RenderNode(Node * node , Frustum* frustum)
 	{
 		if (node->Childs[i] != NULL)
 		{
-			RenderNode(node->Childs[i] , frustum);
+			RenderNode(node->Childs[i], frustum);
 
 			count++;
 		}//if(node)
 	}//for(i)
-	
+
 	if (count != 0)return;
 
 	if (node->isRender == false)return;
-	
-	UINT stride = sizeof(VertexTextureNormal);
+
+	UINT stride = sizeof(TerrainVertexType);
 	UINT offset = 0;
 
+
+
+	//tessBuffer->SetHSBuffer(0);
 	D3D::GetDC()->IASetVertexBuffers(0, 1, &node->VertexBuffer, &stride, &offset);
 	D3D::GetDC()->IASetIndexBuffer(node->IndexBuffer, DXGI_FORMAT_R32_UINT, 0);
-	D3D::GetDC()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	D3D::GetDC()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST);
 
 
 	D3D::GetDC()->DrawIndexed(node->DrawCount, 0, 0);
-	
+
 }
 
 void Landscape::QuadTree::PostRenderNode(Node * node)
@@ -331,8 +342,8 @@ void Landscape::QuadTree::PostRenderNode(Node * node)
 
 	}
 	//ImGui::EndGroup();
-	
-	
-		
-	return;	
+
+
+
+	return;
 }
